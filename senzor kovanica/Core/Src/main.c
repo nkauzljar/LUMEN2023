@@ -820,7 +820,7 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
 {
   // Check which version of the timer triggered this callback
 	if (htim == &htim9){
-
+		//neuspjelo :(
 	  }
 	  if(htim == &htim10){
 		  //ovo se ne bi trebalo desiti :/
