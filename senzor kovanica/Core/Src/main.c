@@ -109,6 +109,7 @@ volatile uint8_t coin_inserted = 0;
 volatile uint8_t coin_still_present = 0;
 volatile uint8_t counting_mode;
 volatile uint8_t cal_mode;
+volatile uint8_t debug_mode = 1;
 
 volatile uint16_t servo1_timer = 18240;
 volatile uint8_t servo1_state = 0;
@@ -355,7 +356,7 @@ int main(void)
   	  DF = MF_max_val - MF_avg;
   	  DV = EF_avg/EF_min_val;
   	  if(debug_mode){
-  		  //ispisati na display
+  		  //ispisati na display vrijednosti DA, DF i DV
   	  }else if(counting_mode){
 	  	  current_coin.da = DA;
 	  	  current_coin.df = DF;
@@ -410,7 +411,8 @@ int main(void)
 			  cal_mode = 0;
 		  }
 	  }
-
+  	HAL_TIM_Base_Start_IT(&htim10);
+  	HAL_TIM_Base_Start_IT(&htim11);
 
     /* USER CODE END WHILE */
 
@@ -875,8 +877,11 @@ void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin)
   }
   //USER gumb na disco boardu
   if(GPIO_Pin == GPIO_PIN_0){
-	  cal_mode = 1;
-	  counting_mode = 0;
+	  if(!debug_mode){
+		  cal_mode = 1;
+		  counting_mode = 0;
+	  }
+
   }
   if(GPIO_Pin == GPIO_PIN_1){
   	  coin_inserted = 1;
