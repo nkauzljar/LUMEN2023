@@ -1,0 +1,11 @@
+../Core/Src/i2c-lcd.c:9:6:lcd_send_cmd	24	static
+../Core/Src/i2c-lcd.c:22:6:lcd_send_data	24	static
+../Core/Src/i2c-lcd.c:35:6:lcd_clear	40	static
+../Core/Src/i2c-lcd.c:44:6:lcd_put_cur	24	static
+../Core/Src/i2c-lcd.c:60:6:lcd_init	32	static
+../Core/Src/i2c-lcd.c:86:6:lcd_send_string	40	static
+../Core/Src/i2c-lcd.c:91:6:display_total_init	40	static
+../Core/Src/i2c-lcd.c:97:6:display_total_update	64	static
+../Core/Src/i2c-lcd.c:110:6:display_bottom	40	static
+../Core/Src/i2c-lcd.c:114:6:clear_bottom	40	static
+../Core/Src/i2c-lcd.c:121:6:display_loading	40	static

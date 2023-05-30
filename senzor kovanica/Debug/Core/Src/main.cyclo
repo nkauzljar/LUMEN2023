@@ -1,0 +1,12 @@
+main.c:152:6:servo1_angle	1
+main.c:155:6:servo2_angle	1
+main.c:160:6:coin_init	1
+main.c:166:9:read_data	1
+main.c:172:6:save_data	1
+main.c:181:6:Write_coin	3
+main.c:190:6:Read_coin	3
+main.c:423:6:SystemClock_Config	3
+main.c:208:5:main	53
+main.c:816:6:HAL_TIM_PeriodElapsedCallback	5
+main.c:857:6:HAL_GPIO_EXTI_Callback	6
+main.c:930:6:Error_Handler	1
