@@ -98,7 +98,7 @@ struct coinSave{
 	float da; //amplitude change of M sensor
 	float dv; //frequency change of E sensor
 };
-volatile struct coinSave savedCoins[8] = {0};
+struct coinSave savedCoins[8] = {0};
 volatile float coin_values[8] = {0.01, 0.02, 0.05, 0.1, 0.2, 0.5, 1, 2};
 
 volatile float EFWeight;
@@ -264,14 +264,12 @@ int main(void)
   display_total_init();
   display_total_update(0);
 
-  servo1_angle(90);
+  servo1_neutral();
   servo2_angle(90);
 
   while(!MF_sensor_output_stable && !MA_sensor_output_stable && !EF_sensor_output_stable ){
 	  if(MF_rdy == 1){
 		  MF_rdy = 0;
-
-
 		  if(abs(MF_avg - MF_new_val)/MF_avg < 0.01) {
 			  MF_sensor_output_stable = 1;
 		  }
@@ -279,8 +277,6 @@ int main(void)
 	  }
 	  if(EF_rdy == 1){
 		  EF_rdy = 0;
-		  EF_new_val = TIM11->CNT;
-		  TIM11->CNT &= 0x00;
 		  if(abs(EF_avg - EF_new_val)/EF_avg < 0.01) {
 			  EF_sensor_output_stable = 1;
 		  }
@@ -293,7 +289,6 @@ int main(void)
 		  }
 		  MA_avg = moving_avg(&MA_mov_avg_index, MA_mov_avg, MA_new_val);
 	  }
-
   }
   reset_data();
 
@@ -375,15 +370,15 @@ int main(void)
 	  		display_total_update(sum);
 	  		servo2_angle(current_coin.coinID * 22);
 	  		HAL_Delay(1000);
-	  		servo1_angle(180);
+	  		servo1_passtrough();
 	  		HAL_Delay(1000);
-	  		servo1_angle(90);
+	  		servo1_neutral();
 	  		servo2_angle(90);
 	  	  }else{
 	  		//coin is not recognized
-	  		servo1_angle(0);
+	  		servo1_return();
 	  		HAL_Delay(1000);
-	  		servo1_angle(90);
+	  		servo1_neutral();
 	  	  }
 	  	  reset_data();
 
