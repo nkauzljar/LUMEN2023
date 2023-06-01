@@ -18,6 +18,7 @@
 /* USER CODE END Header */
 /* Includes ------------------------------------------------------------------*/
 #include "main.h"
+#include "flashFunction.h"
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
@@ -116,7 +117,6 @@ volatile uint8_t servo1_state = 0;
 volatile uint16_t servo2_timer = 18240;
 volatile uint8_t servo2_state = 0;
 
-int sizestruct = 27;
 
 /* USER CODE END PV */
 
@@ -138,14 +138,6 @@ static float moving_avg(uint8_t *index, uint32_t *array_pointer, uint32_t new_va
 void servo1_angle(int ang);
 void servo2_angle(int ang);
 
-void coin_init();
-uint8_t read_data(uint32_t Address);
-void save_data(uint32_t Address,uint8_t data);
-void Write_coin(uint8_t *data_p, int broj);
-void Read_coin(uint8_t *data_p, int broj);
-
-
-
 /* USER CODE END PFP */
 
 /* Private user code ---------------------------------------------------------*/
@@ -155,53 +147,6 @@ void servo1_angle(int ang){
 }
 void servo2_angle(int ang){
 	servo2_timer = (ang*120)+7440;
-}
-
-// inicijalizirati sa  HAL_Init();
-void coin_init(){
-
-HAL_Init();
-uint32_t Address = FLASH_MEMORY_BEGIN;
-uint8_t data = 8;
-save_data(Address,data);
-}
-
-uint8_t read_data(uint32_t Address){
-
-	__IO uint8_t read_data = *(__IO uint32_t *)Address;
-	return (uint8_t)read_data;
-}
-
-void save_data(uint32_t Address,uint8_t data){
-
-    HAL_FLASH_Unlock();
-
-    // FLASH_Erase_Sector(FLASH_SECTOR_7,VOLTAGE_RANGE_1);
-	//HAL_Delay(50);
-	HAL_FLASH_Program(FLASH_TYPEPROGRAM_BYTE,Address,(uint8_t)data);
-	//HAL_Delay(50);
-	HAL_FLASH_Lock();
-
-
-}
-
-void Write_coin(uint8_t *data_p, int broj){
-int i;
-uint32_t flash_address = FLASH_MEMORY_BEGIN + 1 + (broj * sizestruct);
-
-  for ( i = 0; i < sizestruct; i++, data_p++, flash_address++ )
-	 save_data(flash_address, *data_p);
-
-}
-
-void Read_coin(uint8_t *data_p, int broj){
-
-int i;
-uint32_t flash_address = FLASH_MEMORY_BEGIN + 1 + (broj * sizestruct);
-
- for ( i = 0; i < sizestruct ; i++, data_p++, flash_address++ )
-      *data_p = read_data(flash_address);
-
 }
 
 
@@ -217,9 +162,11 @@ int main(void)
   /* USER CODE BEGIN 1 */
 	struct coinSave current_coin, temp_coin;
 	float DF, DA, DV;
-	for(i=0;i<8;i++){
-		Read_coin(&savedCoins[i], i);
-	}
+	uint8_t flashCheck;
+
+
+
+
   /* USER CODE END 1 */
 
   /* MCU Configuration--------------------------------------------------------*/
@@ -259,6 +206,23 @@ int main(void)
   MFWeight = MFreqWeight / (EFreqWeight + MFreqWeight + MAmplWeight);
   MAWeight = MAmplWeight / (EFreqWeight + MFreqWeight + MAmplWeight);
 
+  flashCheck = read_data(FLASH_MEMORY_BEGIN);
+  if(flashCheck == 8){
+	//Coins are already stored, store data from flash into RAM
+	for(i=0;i<8;i++){
+		Read_coin(&savedCoins[i], i);
+	}
+  }else{
+  	void coin_init();
+  }
+
+  if(debug_mode){
+	  counting_mode = 1;
+	  cal_mode = 0;
+  }else{
+	  cal_mode = 1;
+	  counting_mode = 0;
+  }
 
 
   //HAL_TIM_Base_Start_IT(&htim9);
