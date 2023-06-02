@@ -128,3 +128,43 @@ void display_loading(void){
 		HAL_Delay(80);
 	}
 }
+void display_debug(float a, float b, float c){
+	lcd_clear();
+	lcd_put_cur(0, 0);
+	//int aa = a*100;
+	int bb = b*1000;
+	int cc = c*1000;
+
+	char as[] = "00.000";
+	char bs[] = "00.000";
+	char cs[] = "00.000";
+	as[0] = ((int)a)%100/10 +48;
+	as[1] = ((int)a)%10 +48;
+	as[2] = '.';
+	as[3] = ((int)(a*10))%10 +48;
+	as[4] = ((int)(a*100))%10 +48;
+	as[5] = ((int)((a-(int)a)*1000))%10 +48;
+
+	bs[0] = bb%100000/10000 +48;
+	bs[1] = bb%10000/1000 +48;
+	bs[2] = '.';
+	bs[3] = bb%1000/100 +48;
+	bs[4] = bb%100/10 +48;
+	bs[5] = bb%10 +48;
+
+	cs[0] = cc%100000/10000 +48;
+	cs[1] = cc%10000/1000 +48;
+	cs[2] = '.';
+	cs[3] = cc%1000/100 +48;
+	cs[4] = cc%100/10 +48;
+	cs[5] = cc%10 +48;
+
+	lcd_put_cur(0, 0);
+	lcd_send_string(as);
+	lcd_put_cur(0, 8);
+	lcd_send_string(bs);
+	lcd_put_cur(1, 0);
+	lcd_send_string(cs);
+
+}
+
