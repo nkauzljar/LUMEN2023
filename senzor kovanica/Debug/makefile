@@ -60,8 +60,8 @@ all: main-build
 main-build: senzor-kovanica.elf secondary-outputs
 
 # Tool invocations
-senzor-kovanica.elf senzor-kovanica.map: $(OBJS) $(USER_OBJS) /run/media/nikola/Data/Files/01faks/5\ GODINA/LUMEN/SW/senzor\ kovanica/STM32F411VETX_FLASH.ld makefile objects.list $(OPTIONAL_TOOL_DEPS)
-	arm-none-eabi-gcc -o "senzor-kovanica.elf" @"objects.list" $(USER_OBJS) $(LIBS) -mcpu=cortex-m4 -T"/run/media/nikola/Data/Files/01faks/5 GODINA/LUMEN/SW/senzor kovanica/STM32F411VETX_FLASH.ld" --specs=nosys.specs -Wl,-Map="senzor-kovanica.map" -Wl,--gc-sections -static --specs=nano.specs -mfpu=fpv4-sp-d16 -mfloat-abi=hard -mthumb -Wl,--start-group -lc -lm -Wl,--end-group
+senzor-kovanica.elf senzor-kovanica.map: $(OBJS) $(USER_OBJS) /run/media/nikola/Data/Files/01faks/5\ GODINA/LUMEN/git/Lumen2023/senzor\ kovanica/STM32F411VETX_FLASH.ld makefile objects.list $(OPTIONAL_TOOL_DEPS)
+	arm-none-eabi-gcc -o "senzor-kovanica.elf" @"objects.list" $(USER_OBJS) $(LIBS) -mcpu=cortex-m4 -T"/run/media/nikola/Data/Files/01faks/5 GODINA/LUMEN/git/Lumen2023/senzor kovanica/STM32F411VETX_FLASH.ld" --specs=nosys.specs -Wl,-Map="senzor-kovanica.map" -Wl,--gc-sections -static --specs=nano.specs -mfpu=fpv4-sp-d16 -mfloat-abi=hard -mthumb -Wl,--start-group -lc -lm -Wl,--end-group
 	@echo 'Finished building target: $@'
 	@echo ' '
 

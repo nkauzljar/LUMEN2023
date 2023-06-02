@@ -1,7 +1,7 @@
-../Core/Src/main.c:145:6:servo1_angle	0	static
-../Core/Src/main.c:148:6:servo2_angle	0	static
-../Core/Src/main.c:393:6:SystemClock_Config	88	static,ignoring_inline_asm
-../Core/Src/main.c:160:5:main	160	static,ignoring_inline_asm
-../Core/Src/main.c:786:6:HAL_TIM_PeriodElapsedCallback	8	static
-../Core/Src/main.c:827:6:HAL_GPIO_EXTI_Callback	4	static
-../Core/Src/main.c:903:6:Error_Handler	0	static,ignoring_inline_asm
+../Core/Src/main.c:144:6:servo1_angle	0	static
+../Core/Src/main.c:147:6:servo2_angle	0	static
+../Core/Src/main.c:400:6:SystemClock_Config	88	static,ignoring_inline_asm
+../Core/Src/main.c:159:5:main	168	static,ignoring_inline_asm
+../Core/Src/main.c:790:6:HAL_TIM_PeriodElapsedCallback	8	static
+../Core/Src/main.c:831:6:HAL_GPIO_EXTI_Callback	4	static
+../Core/Src/main.c:910:6:Error_Handler	0	static,ignoring_inline_asm

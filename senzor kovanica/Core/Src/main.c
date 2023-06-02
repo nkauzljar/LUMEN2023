@@ -18,7 +18,6 @@
 /* USER CODE END Header */
 /* Includes ------------------------------------------------------------------*/
 #include "main.h"
-#include "flashFunction.h"
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
@@ -214,6 +213,14 @@ int main(void)
 	}
   }else{
   	void coin_init();
+  	//init RAM stored coins
+  	for(i = 0;i<8;i++){
+  		savedCoins[i].currencyName[0] = 'E';
+  		savedCoins[i].currencyName[1] = 'U';
+  		savedCoins[i].currencyName[2] = 'R';
+  		savedCoins[i].coinID = i;
+  		savedCoins[i].value = coin_values[i];
+  	}
   }
 
   if(debug_mode){
@@ -721,28 +728,12 @@ static void MX_GPIO_Init(void)
   /* GPIO Ports Clock Enable */
   __HAL_RCC_GPIOE_CLK_ENABLE();
   __HAL_RCC_GPIOH_CLK_ENABLE();
+  __HAL_RCC_GPIOC_CLK_ENABLE();
   __HAL_RCC_GPIOA_CLK_ENABLE();
   __HAL_RCC_GPIOB_CLK_ENABLE();
 
   /*Configure GPIO pin Output Level */
-  HAL_GPIO_WritePin(GPIOE, GPIO_PIN_2, GPIO_PIN_SET);
-
-  /*Configure GPIO pin Output Level */
-  HAL_GPIO_WritePin(GPIOE, GPIO_PIN_3, GPIO_PIN_RESET);
-
-  /*Configure GPIO pin : PE2 */
-  GPIO_InitStruct.Pin = GPIO_PIN_2;
-  GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
-  GPIO_InitStruct.Pull = GPIO_NOPULL;
-  GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_HIGH;
-  HAL_GPIO_Init(GPIOE, &GPIO_InitStruct);
-
-  /*Configure GPIO pin : PE3 */
-  GPIO_InitStruct.Pin = GPIO_PIN_3;
-  GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
-  GPIO_InitStruct.Pull = GPIO_NOPULL;
-  GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
-  HAL_GPIO_Init(GPIOE, &GPIO_InitStruct);
+  HAL_GPIO_WritePin(GPIOC, GPIO_PIN_1|GPIO_PIN_2, GPIO_PIN_RESET);
 
   /*Configure GPIO pin : PE6 */
   GPIO_InitStruct.Pin = GPIO_PIN_6;
@@ -750,17 +741,30 @@ static void MX_GPIO_Init(void)
   GPIO_InitStruct.Pull = GPIO_NOPULL;
   HAL_GPIO_Init(GPIOE, &GPIO_InitStruct);
 
-  /*Configure GPIO pin : PA4 */
-  GPIO_InitStruct.Pin = GPIO_PIN_4;
-  GPIO_InitStruct.Mode = GPIO_MODE_IT_RISING;
-  GPIO_InitStruct.Pull = GPIO_PULLUP;
-  HAL_GPIO_Init(GPIOA, &GPIO_InitStruct);
+  /*Configure GPIO pins : PC1 PC2 */
+  GPIO_InitStruct.Pin = GPIO_PIN_1|GPIO_PIN_2;
+  GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
+  GPIO_InitStruct.Pull = GPIO_NOPULL;
+  GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
+  HAL_GPIO_Init(GPIOC, &GPIO_InitStruct);
 
-  /*Configure GPIO pins : PB0 PB1 PB2 */
-  GPIO_InitStruct.Pin = GPIO_PIN_0|GPIO_PIN_1|GPIO_PIN_2;
+  /*Configure GPIO pins : PB0 PB1 PB2 PB3 */
+  GPIO_InitStruct.Pin = GPIO_PIN_0|GPIO_PIN_1|GPIO_PIN_2|GPIO_PIN_3;
   GPIO_InitStruct.Mode = GPIO_MODE_IT_RISING;
   GPIO_InitStruct.Pull = GPIO_PULLUP;
   HAL_GPIO_Init(GPIOB, &GPIO_InitStruct);
+
+  /*Configure GPIO pin : PC7 */
+  GPIO_InitStruct.Pin = GPIO_PIN_7;
+  GPIO_InitStruct.Mode = GPIO_MODE_IT_RISING;
+  GPIO_InitStruct.Pull = GPIO_PULLUP;
+  HAL_GPIO_Init(GPIOC, &GPIO_InitStruct);
+
+  /*Configure GPIO pin : PA9 */
+  GPIO_InitStruct.Pin = GPIO_PIN_9;
+  GPIO_InitStruct.Mode = GPIO_MODE_IT_RISING;
+  GPIO_InitStruct.Pull = GPIO_PULLUP;
+  HAL_GPIO_Init(GPIOA, &GPIO_InitStruct);
 
   /* EXTI interrupt init*/
   HAL_NVIC_SetPriority(EXTI0_IRQn, 0, 0);
@@ -772,8 +776,8 @@ static void MX_GPIO_Init(void)
   HAL_NVIC_SetPriority(EXTI2_IRQn, 0, 0);
   HAL_NVIC_EnableIRQ(EXTI2_IRQn);
 
-  HAL_NVIC_SetPriority(EXTI4_IRQn, 0, 0);
-  HAL_NVIC_EnableIRQ(EXTI4_IRQn);
+  HAL_NVIC_SetPriority(EXTI3_IRQn, 0, 0);
+  HAL_NVIC_EnableIRQ(EXTI3_IRQn);
 
   HAL_NVIC_SetPriority(EXTI9_5_IRQn, 0, 0);
   HAL_NVIC_EnableIRQ(EXTI9_5_IRQn);
@@ -799,12 +803,12 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
 	  if (htim == &htim2) {
 
 	    if(servo1_state == 1){
-	      HAL_GPIO_WritePin(GPIOE, GPIO_PIN_2, 0);
+	      HAL_GPIO_WritePin(GPIOC, GPIO_PIN_1, 0);
 	      servo1_state = 0;
 	      TIM2->ARR = servo1_timer;
 	    }
 	    else{
-	      HAL_GPIO_WritePin(GPIOE, GPIO_PIN_2, 1);
+	      HAL_GPIO_WritePin(GPIOC, GPIO_PIN_1, 1);
 	      servo1_state = 1;
 	      TIM2->ARR = 240000;
 	    }
@@ -812,12 +816,12 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
 	  }
 	  if(htim == &htim5){
 	    if(servo2_state == 1){
-	      HAL_GPIO_WritePin(GPIOE, GPIO_PIN_3, 0);
+	      HAL_GPIO_WritePin(GPIOC, GPIO_PIN_2, 0);
 	      servo2_state = 0;
 	      TIM5->ARR = servo2_timer;
 	    }
 	    else{
-	      HAL_GPIO_WritePin(GPIOE, GPIO_PIN_3, 1);
+	      HAL_GPIO_WritePin(GPIOC, GPIO_PIN_2, 1);
 	      servo2_state = 1;
 	      TIM5->ARR = 240000;
 	    }
@@ -834,8 +838,8 @@ void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin)
   	  TIM10->CNT &= 0x00; //reset timer counter
   	  ADC1->CR2 |= 1 << 30; //start ADC conversion
   }
-  //EF update PIN PA4
-  if(GPIO_Pin == GPIO_PIN_4) {
+  //EF update PIN PB3
+  if(GPIO_Pin == GPIO_PIN_3) {
 	  EF_new_val = TIM11->CNT;
 	  TIM11->CNT &= 0x00;
 	  EF_rdy = 1;
@@ -846,17 +850,19 @@ void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin)
 		  cal_mode = 1;
 		  counting_mode = 0;
 	  }
-
   }
-  if(GPIO_Pin == GPIO_PIN_1){
+  //PC7
+  if(GPIO_Pin == GPIO_PIN_7){
   	  coin_inserted = 1;
   	  coin_still_present = 1;
   }
-  if(GPIO_Pin == GPIO_PIN_2){
+  //PA9
+  if(GPIO_Pin == GPIO_PIN_9){
 	  coin_still_present = 0;
   }
 
 }
+//nazalost ne radi dobro :(
 static void set_local_osc(float freq){
 	TIM9->ARR = (uint16_t)(48e3/freq+1);
 }
@@ -889,11 +895,12 @@ static float moving_avg(uint8_t *index, uint32_t *array_pointer, uint32_t new_va
 	sum /= (float)moving_average_size;
 	return sum;
 }
-
+/*
 static float abs(float a){
 	if(a < 0) return -1*a;
 	return a;
 }
+*/
 /* USER CODE END 4 */
 
 /**

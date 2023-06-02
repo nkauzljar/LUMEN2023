@@ -9,3 +9,4 @@ i2c-lcd.c:97:6:display_total_update	2
 i2c-lcd.c:110:6:display_bottom	3
 i2c-lcd.c:114:6:clear_bottom	2
 i2c-lcd.c:121:6:display_loading	4
+i2c-lcd.c:131:6:display_debug	5
