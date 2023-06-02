@@ -22,6 +22,7 @@
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
 #include <i2c-lcd.h>
+#include "flashFunction.h"
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -75,13 +76,13 @@ volatile uint32_t MA_mov_avg[moving_average_size];
 volatile uint32_t MF_mov_avg[moving_average_size];
 volatile uint32_t EF_mov_avg[moving_average_size];
 
-volatile uint8_t MA_mov_avg_index;
-volatile uint8_t MF_mov_avg_index;
-volatile uint8_t EF_mov_avg_index;
+uint8_t MA_mov_avg_index;
+uint8_t MF_mov_avg_index;
+uint8_t EF_mov_avg_index;
 
-volatile float EF_avg;
-volatile float MF_avg;
-volatile float MA_avg;
+float EF_avg;
+float MF_avg;
+float MA_avg;
 
 volatile uint8_t MF_sensor_output_stable = 0;
 volatile uint8_t EF_sensor_output_stable = 0;
@@ -130,12 +131,12 @@ static void MX_I2C1_Init(void);
 static void MX_TIM2_Init(void);
 static void MX_TIM5_Init(void);
 /* USER CODE BEGIN PFP */
-static void set_local_osc(float freq);
 static void reset_data();
 static float probability_match(struct coinSave *coin1, struct coinSave *coin2);
 static float moving_avg(uint8_t *index, uint32_t *array_pointer, uint32_t new_value);
 void servo1_angle(int ang);
 void servo2_angle(int ang);
+static float deviation(float a, float b);
 
 /* USER CODE END PFP */
 
@@ -159,7 +160,7 @@ void servo2_angle(int ang){
 int main(void)
 {
   /* USER CODE BEGIN 1 */
-	struct coinSave current_coin, temp_coin;
+	struct coinSave current_coin;
 	float DF, DA, DV;
 	uint8_t flashCheck;
 
@@ -222,6 +223,7 @@ int main(void)
   		savedCoins[i].value = coin_values[i];
   	}
   }
+  current_coin.coinID = 0;
 
   if(debug_mode){
 	  counting_mode = 1;
@@ -247,21 +249,21 @@ int main(void)
   while(!MF_sensor_output_stable && !MA_sensor_output_stable && !EF_sensor_output_stable ){
 	  if(MF_rdy == 1){
 		  MF_rdy = 0;
-		  if(abs(MF_avg - MF_new_val)/MF_avg < 0.01) {
+		  if(deviation(MF_avg, MF_new_val) < 0.01) {
 			  MF_sensor_output_stable = 1;
 		  }
 		  MF_avg = moving_avg(&MF_mov_avg_index, MF_mov_avg, MF_new_val);
 	  }
 	  if(EF_rdy == 1){
 		  EF_rdy = 0;
-		  if(abs(EF_avg - EF_new_val)/EF_avg < 0.01) {
+		  if(deviation(EF_avg, EF_new_val) < 0.01) {
 			  EF_sensor_output_stable = 1;
 		  }
 		  EF_avg = moving_avg(&EF_mov_avg_index, EF_mov_avg, EF_new_val);
 	  }
 	  if(MA_rdy){
 		  MA_new_val = ADC1->DR;
-		  if(abs(MA_avg - MA_new_val)/MA_new_val < 0.01) {
+		  if(deviation(MA_avg, MA_new_val) < 0.01) {
 			  MA_sensor_output_stable = 1;
 		  }
 		  MA_avg = moving_avg(&MA_mov_avg_index, MA_mov_avg, MA_new_val);
@@ -786,6 +788,7 @@ static void MX_GPIO_Init(void)
 /* USER CODE END MX_GPIO_Init_2 */
 }
 
+
 /* USER CODE BEGIN 4 */
 void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
 {
@@ -851,21 +854,23 @@ void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin)
 		  counting_mode = 0;
 	  }
   }
-  //PC7
+  //LED detection on coin insertin on PC7
   if(GPIO_Pin == GPIO_PIN_7){
   	  coin_inserted = 1;
   	  coin_still_present = 1;
   }
-  //PA9
+  //LED detection on coin leaving sensors on PA9
   if(GPIO_Pin == GPIO_PIN_9){
 	  coin_still_present = 0;
   }
 
 }
 //nazalost ne radi dobro :(
+/*
 static void set_local_osc(float freq){
 	TIM9->ARR = (uint16_t)(48e3/freq+1);
 }
+*/
 static void reset_data(){
 	MA_min_val = 4095;
 	MF_max_val = 0;
@@ -876,9 +881,9 @@ static void reset_data(){
 }
 static float probability_match(struct coinSave *coin1, struct coinSave *coin2){
 	float da_probability, df_probability, dv_probability;
-	da_probability = 1 - abs(coin1->da - coin2->da)/coin1->da;
-	df_probability = 1 - abs(coin1->df - coin2->df)/coin1->df;
-	dv_probability = 1 - abs(coin1->dv - coin2->dv)/coin1->dv;
+	da_probability = 1 - deviation(coin1->da, coin2->da);
+	df_probability = 1 - deviation(coin1->df, coin2->df);
+	dv_probability = 1 - deviation(coin1->dv, coin2->dv);
 	if(da_probability <= 0 || df_probability <= 0  || dv_probability <= 0) return 0;
 	return da_probability * MAWeight + df_probability * MFWeight + dv_probability * EFWeight;
 }
@@ -894,6 +899,12 @@ static float moving_avg(uint8_t *index, uint32_t *array_pointer, uint32_t new_va
 	}
 	sum /= (float)moving_average_size;
 	return sum;
+}
+
+static float deviation(float a, float b){
+	float result = (a - b)/a;
+	if(result < 0) result *= -1;
+	return result;
 }
 /*
 static float abs(float a){
