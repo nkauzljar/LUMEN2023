@@ -22,3 +22,4 @@ void clear_bottom(void);		//obrisi samo donji redak
 
 void display_loading(void);		//loading animacija
 
+void display_debug(float a, float b, float c);    //print tri floata, za laksi debug
