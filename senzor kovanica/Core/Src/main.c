@@ -142,12 +142,7 @@ static float deviation(float a, float b);
 
 /* Private user code ---------------------------------------------------------*/
 /* USER CODE BEGIN 0 */
-void servo1_angle(int ang){
-	servo1_timer = (ang*120)+7440;
-}
-void servo2_angle(int ang){
-	servo2_timer = (ang*120)+7440;
-}
+
 
 
 
@@ -905,6 +900,14 @@ static float deviation(float a, float b){
 	float result = (a - b)/a;
 	if(result < 0) result *= -1;
 	return result;
+}
+
+void servo1_angle(int ang){
+	servo1_timer = (ang*120)+7440;
+}
+
+void servo2_angle(int ang){
+	servo2_timer = (ang*120)+7440;
 }
 /*
 static float abs(float a){
