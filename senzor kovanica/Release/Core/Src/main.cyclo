@@ -1,5 +1,7 @@
-main.c:279:6:SystemClock_Config	3
-main.c:127:5:main	27
-main.c:538:6:HAL_TIM_PeriodElapsedCallback	2
-main.c:553:6:HAL_GPIO_EXTI_Callback	6
-main.c:617:6:Error_Handler	1
+main.c:402:6:SystemClock_Config	3
+main.c:155:5:main	48
+main.c:792:6:HAL_TIM_PeriodElapsedCallback	5
+main.c:833:6:HAL_GPIO_EXTI_Callback	7
+main.c:909:6:servo1_angle	1
+main.c:913:6:servo2_angle	1
+main.c:928:6:Error_Handler	1

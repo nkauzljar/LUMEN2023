@@ -5,7 +5,7 @@ void coin_init(){
 HAL_Init();
 uint32_t Address = FLASH_MEMORY_BEGIN;
 uint8_t data = 8;
-save_data(Address,data);
+//save_data(Address,data);
 }
 
 uint8_t read_data(uint32_t Address){

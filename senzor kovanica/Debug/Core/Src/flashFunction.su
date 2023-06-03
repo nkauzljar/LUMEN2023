@@ -1,4 +1,4 @@
-../Core/Src/flashFunction.c:3:6:coin_init	8	static
+../Core/Src/flashFunction.c:3:6:coin_init	0	static
 ../Core/Src/flashFunction.c:11:9:read_data	8	static
 ../Core/Src/flashFunction.c:17:6:save_data	16	static
 ../Core/Src/flashFunction.c:30:6:Write_coin	24	static

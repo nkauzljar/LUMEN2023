@@ -32,16 +32,16 @@
 
 /* Private define ------------------------------------------------------------*/
 /* USER CODE BEGIN PD */
-#define EFreqWeight 1.f
+#define EFreqWeight 0.1f
 #define MFreqWeight 1.f
-#define MAmplWeight 1.f
-#define criticalCertainty 0.9f
+#define MAmplWeight 1.5f
+#define criticalCertainty 0.985f
 #define MA_rdy ADC1->SR || 0x10
 #define moving_average_size 8
 #define SLAVE_ADDRESS_LCD 0x4E
-#define servo1_neutral()
-#define servo1_return()
-#define servo1_passtrough()
+#define servo1_neutral() servo1_angle(90)
+#define servo1_return()	servo1_angle(180)
+#define servo1_passtrough()	servo1_angle(0)
 #define FLASH_MEMORY_BEGIN 0x08060000
 /* USER CODE END PD */
 
@@ -68,13 +68,14 @@ volatile uint32_t MF_max_val = 0;
 volatile uint32_t MF_new_val;
 volatile uint8_t MF_rdy;
 
-volatile uint32_t EF_min_val = 65535;
+volatile uint32_t EF_min_val;
 volatile uint32_t EF_new_val;
 volatile uint8_t EF_rdy;
 
 volatile uint32_t MA_mov_avg[moving_average_size];
 volatile uint32_t MF_mov_avg[moving_average_size];
 volatile uint32_t EF_mov_avg[moving_average_size];
+
 
 uint8_t MA_mov_avg_index;
 uint8_t MF_mov_avg_index;
@@ -83,6 +84,9 @@ uint8_t EF_mov_avg_index;
 float EF_avg;
 float MF_avg;
 float MA_avg;
+float EF_avg_cur;
+float MF_avg_cur;
+float MA_avg_cur;
 
 volatile uint8_t MF_sensor_output_stable = 0;
 volatile uint8_t EF_sensor_output_stable = 0;
@@ -110,12 +114,13 @@ volatile uint8_t coin_inserted = 0;
 volatile uint8_t coin_still_present = 0;
 volatile uint8_t counting_mode;
 volatile uint8_t cal_mode;
-volatile uint8_t debug_mode = 1;
+volatile uint8_t debug_mode = 0;
 
 volatile uint16_t servo1_timer = 18240;
 volatile uint8_t servo1_state = 0;
 volatile uint16_t servo2_timer = 18240;
 volatile uint8_t servo2_state = 0;
+volatile uint32_t cunt = 0;
 
 
 /* USER CODE END PV */
@@ -155,8 +160,8 @@ static float deviation(float a, float b);
 int main(void)
 {
   /* USER CODE BEGIN 1 */
-	struct coinSave current_coin;
-	float DF, DA, DV;
+	volatile struct coinSave current_coin;
+	volatile float DF, DA, DV;
 	uint8_t flashCheck;
 
 
@@ -202,13 +207,19 @@ int main(void)
   MAWeight = MAmplWeight / (EFreqWeight + MFreqWeight + MAmplWeight);
 
   flashCheck = read_data(FLASH_MEMORY_BEGIN);
+  sum = 0;
+  display_total_init();
+  display_total_update(0);
   if(flashCheck == 8){
 	//Coins are already stored, store data from flash into RAM
 	for(i=0;i<8;i++){
 		Read_coin(&savedCoins[i], i);
 	}
+	cal_mode = 0;
+	counting_mode = 1;
+	display_bottom("Counting");
   }else{
-  	void coin_init();
+  	coin_init();
   	//init RAM stored coins
   	for(i = 0;i<8;i++){
   		savedCoins[i].currencyName[0] = 'E';
@@ -217,16 +228,14 @@ int main(void)
   		savedCoins[i].coinID = i;
   		savedCoins[i].value = coin_values[i];
   	}
+  	i = 0;
+		cal_mode = 1;
+		counting_mode = 0;
+  	display_bottom("Cal");
+  	display_total_update(0.01);
   }
   current_coin.coinID = 0;
-
-  if(debug_mode){
-	  counting_mode = 1;
-	  cal_mode = 0;
-  }else{
-	  cal_mode = 1;
-	  counting_mode = 0;
-  }
+  sum = 0;
 
 
   //HAL_TIM_Base_Start_IT(&htim9);
@@ -235,12 +244,14 @@ int main(void)
   HAL_TIM_Base_Start_IT(&htim2);
   HAL_TIM_Base_Start_IT(&htim5);
   ADC1->CR2 |= 0x01;
-  display_total_init();
-  display_total_update(0);
+  /*
 
+*/
+  servo1_return();
+  HAL_Delay(1000);
   servo1_neutral();
   servo2_angle(90);
-
+  /*
   while(!MF_sensor_output_stable && !MA_sensor_output_stable && !EF_sensor_output_stable ){
 	  if(MF_rdy == 1){
 		  MF_rdy = 0;
@@ -264,6 +275,7 @@ int main(void)
 		  MA_avg = moving_avg(&MA_mov_avg_index, MA_mov_avg, MA_new_val);
 	  }
   }
+  */
   reset_data();
 
 
@@ -287,7 +299,8 @@ int main(void)
 	  		  EF_avg = moving_avg(&EF_mov_avg_index, EF_mov_avg, EF_new_val);
 	  	  }
 	  	  if(MA_rdy){
-	  		  MA_new_val = ADC1->DR;
+	  		 // MA_new_val = ADC1->DR;
+	  		  MA_new_val = HAL_ADC_GetValue(&hadc1);
 	  		  MA_avg = moving_avg(&MA_mov_avg_index, MA_mov_avg, MA_new_val);
 	  	  }
 	  }
@@ -297,35 +310,47 @@ int main(void)
 		  if(MF_rdy == 1)
 	  	  {
 	  		  MF_rdy = 0;
-	  		  if(MF_new_val < MF_max_val)
-	  		  {
-	  			  MF_max_val = MF_new_val;
+	  		  if(MF_new_val > 1200){
+	  			MF_avg_cur = moving_avg(&MF_mov_avg_index, MF_mov_avg, MF_new_val);
+	  			if(MF_avg_cur < MF_max_val){
+	  				MF_max_val = MF_avg_cur;
+	  			}
 	  		  }
+
 	  	  }
 	  	  if(EF_rdy == 1)
 	  	  {
 	  		  EF_rdy = 0;
-	  		  if(EF_new_val > EF_min_val)
+	  		  EF_avg_cur = moving_avg(&EF_mov_avg_index, EF_mov_avg, EF_new_val);
+	  		  if(EF_avg_cur > EF_min_val)
 	  		  {
-	  			  EF_min_val = MF_new_val;
+	  			  EF_min_val = EF_avg_cur;
 	  		  }
 	  	  }
 	  	  //ADC conversion finished
 	  	  if(MA_rdy){
-	  		  MA_new_val = ADC1->DR;
-	  		  if(MA_new_val < MA_min_val){
-	  			  MA_min_val = MA_new_val;
+	  		 MA_new_val =HAL_ADC_GetValue(&hadc1);
+	  		  //MA_new_val = ADC1->DR;
+	  		  MA_avg_cur = moving_avg(&MA_mov_avg_index, MA_mov_avg, MA_new_val);
+	  		  if(MA_avg_cur < MA_min_val){
+	  			  MA_min_val = MA_avg_cur;
 	  		  }
 	  	  }
 	  }
 	  //coin left the tunnel
 	  HAL_TIM_Base_Stop_IT(&htim10);
 	  HAL_TIM_Base_Stop_IT(&htim11);
-	  DA = MA_avg/MA_min_val;
-  	  DF = MF_max_val - MF_avg;
-  	  DV = EF_avg/EF_min_val;
+	  DA = MA_avg/MA_min_val*10;
+  	  DF = MF_avg/MF_max_val*10;
+  	  DV = EF_min_val/EF_avg*10;
+
   	  if(debug_mode){
   		  //ispisati na display vrijednosti DA, DF i DV
+  		  display_debug(DA, DF, DV);
+  		  HAL_Delay(250);
+  		  servo1_return();
+  		  HAL_Delay(1000);
+  		  servo1_neutral();
   	  }else if(counting_mode){
 	  	  current_coin.da = DA;
 	  	  current_coin.df = DF;
@@ -334,15 +359,15 @@ int main(void)
 	  	  for(i = 0;i<8;i++){
 	  		if(probability_match(&savedCoins[i], &current_coin) >= criticalCertainty){
 	  			j++;
-	  			current_coin.value = savedCoins[i].value;
+	  			current_coin.coinID = savedCoins[i].coinID;
 	  		}
 	  		if(j > 1)break;
 	  	  }
 	  	  if(j == 1){
 	  		 //coin is recognized
-	  		sum += current_coin.value;
+	  		sum += savedCoins[current_coin.coinID].value;
 	  		display_total_update(sum);
-	  		servo2_angle(current_coin.coinID * 22);
+	  		servo2_angle(0);
 	  		HAL_Delay(1000);
 	  		servo1_passtrough();
 	  		HAL_Delay(1000);
@@ -357,16 +382,23 @@ int main(void)
 	  	  reset_data();
 
 	  }else if(cal_mode){
-		  if(j == 0){
-			  sum = 0;
-		  }else if(j < 5){
+		  if(j < 4){
+			  if(j == 0){
+				  sum_DV = 0;
+				  sum_DF = 0;
+				  sum_DA = 0;
+			  }
 			  sum_DV += DV;
 			  sum_DF += DF;
 			  sum_DA += DA;
+			  j++;
 		  }else{
+			  sum_DV += DV;
+			  sum_DF += DF;
+			  sum_DA += DA;
 			  sum_DV /= 5;
 			  sum_DF /= 5;
-			  sum_DA/= 5;
+			  sum_DA /= 5;
 			  savedCoins[i].da = sum_DA;
 			  savedCoins[i].df = sum_DF;
 			  savedCoins[i].dv = sum_DV;
@@ -375,11 +407,24 @@ int main(void)
 			  j = 0;
 			  i++;
 		  }
-		  if(i == 9){
+		  lcd_put_cur(1, 10);
+		  lcd_send_data(j+48);
+		  display_total_update(savedCoins[i].value);
+		  HAL_Delay(250);
+		  servo1_return();
+		  HAL_Delay(1000);
+		  servo1_neutral();
+		  if(i == 8){
 			  counting_mode = 1;
 			  cal_mode = 0;
+			  lcd_clear();
+			  display_total_init();
+			  display_total_update(sum);
+			  display_bottom("Counting");
+			  save_data(FLASH_MEMORY_BEGIN, 0x08);
 		  }
 	  }
+  	reset_data();
   	HAL_TIM_Base_Start_IT(&htim10);
   	HAL_TIM_Base_Start_IT(&htim11);
 
@@ -456,10 +501,10 @@ static void MX_ADC1_Init(void)
   /** Configure the global features of the ADC (Clock, Resolution, Data Alignment and number of conversion)
   */
   hadc1.Instance = ADC1;
-  hadc1.Init.ClockPrescaler = ADC_CLOCK_SYNC_PCLK_DIV4;
+  hadc1.Init.ClockPrescaler = ADC_CLOCK_SYNC_PCLK_DIV2;
   hadc1.Init.Resolution = ADC_RESOLUTION_12B;
   hadc1.Init.ScanConvMode = DISABLE;
-  hadc1.Init.ContinuousConvMode = DISABLE;
+  hadc1.Init.ContinuousConvMode = ENABLE;
   hadc1.Init.DiscontinuousConvMode = DISABLE;
   hadc1.Init.ExternalTrigConvEdge = ADC_EXTERNALTRIGCONVEDGE_NONE;
   hadc1.Init.ExternalTrigConv = ADC_SOFTWARE_START;
@@ -730,7 +775,7 @@ static void MX_GPIO_Init(void)
   __HAL_RCC_GPIOB_CLK_ENABLE();
 
   /*Configure GPIO pin Output Level */
-  HAL_GPIO_WritePin(GPIOC, GPIO_PIN_1|GPIO_PIN_2, GPIO_PIN_RESET);
+  HAL_GPIO_WritePin(GPIOC, GPIO_PIN_0|GPIO_PIN_1, GPIO_PIN_RESET);
 
   /*Configure GPIO pin : PE6 */
   GPIO_InitStruct.Pin = GPIO_PIN_6;
@@ -738,30 +783,36 @@ static void MX_GPIO_Init(void)
   GPIO_InitStruct.Pull = GPIO_NOPULL;
   HAL_GPIO_Init(GPIOE, &GPIO_InitStruct);
 
-  /*Configure GPIO pins : PC1 PC2 */
-  GPIO_InitStruct.Pin = GPIO_PIN_1|GPIO_PIN_2;
+  /*Configure GPIO pins : PC0 PC1 */
+  GPIO_InitStruct.Pin = GPIO_PIN_0|GPIO_PIN_1;
   GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
   GPIO_InitStruct.Pull = GPIO_NOPULL;
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
   HAL_GPIO_Init(GPIOC, &GPIO_InitStruct);
 
-  /*Configure GPIO pins : PB0 PB1 PB2 PB3 */
-  GPIO_InitStruct.Pin = GPIO_PIN_0|GPIO_PIN_1|GPIO_PIN_2|GPIO_PIN_3;
+  /*Configure GPIO pin : PA5 */
+  GPIO_InitStruct.Pin = GPIO_PIN_5;
+  GPIO_InitStruct.Mode = GPIO_MODE_IT_RISING;
+  GPIO_InitStruct.Pull = GPIO_NOPULL;
+  HAL_GPIO_Init(GPIOA, &GPIO_InitStruct);
+
+  /*Configure GPIO pins : PB0 PB1 PB2 */
+  GPIO_InitStruct.Pin = GPIO_PIN_0|GPIO_PIN_1|GPIO_PIN_2;
   GPIO_InitStruct.Mode = GPIO_MODE_IT_RISING;
   GPIO_InitStruct.Pull = GPIO_PULLUP;
   HAL_GPIO_Init(GPIOB, &GPIO_InitStruct);
 
-  /*Configure GPIO pin : PC7 */
-  GPIO_InitStruct.Pin = GPIO_PIN_7;
+  /*Configure GPIO pins : PC7 PC9 */
+  GPIO_InitStruct.Pin = GPIO_PIN_7|GPIO_PIN_9;
   GPIO_InitStruct.Mode = GPIO_MODE_IT_RISING;
   GPIO_InitStruct.Pull = GPIO_PULLUP;
   HAL_GPIO_Init(GPIOC, &GPIO_InitStruct);
 
-  /*Configure GPIO pin : PA9 */
-  GPIO_InitStruct.Pin = GPIO_PIN_9;
-  GPIO_InitStruct.Mode = GPIO_MODE_IT_RISING;
+  /*Configure GPIO pin : PB3 */
+  GPIO_InitStruct.Pin = GPIO_PIN_3;
+  GPIO_InitStruct.Mode = GPIO_MODE_IT_FALLING;
   GPIO_InitStruct.Pull = GPIO_PULLUP;
-  HAL_GPIO_Init(GPIOA, &GPIO_InitStruct);
+  HAL_GPIO_Init(GPIOB, &GPIO_InitStruct);
 
   /* EXTI interrupt init*/
   HAL_NVIC_SetPriority(EXTI0_IRQn, 0, 0);
@@ -783,7 +834,6 @@ static void MX_GPIO_Init(void)
 /* USER CODE END MX_GPIO_Init_2 */
 }
 
-
 /* USER CODE BEGIN 4 */
 void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
 {
@@ -801,12 +851,12 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
 	  if (htim == &htim2) {
 
 	    if(servo1_state == 1){
-	      HAL_GPIO_WritePin(GPIOC, GPIO_PIN_1, 0);
+	      HAL_GPIO_WritePin(GPIOC, GPIO_PIN_0, 0);
 	      servo1_state = 0;
 	      TIM2->ARR = servo1_timer;
 	    }
 	    else{
-	      HAL_GPIO_WritePin(GPIOC, GPIO_PIN_1, 1);
+	      HAL_GPIO_WritePin(GPIOC, GPIO_PIN_0, 1);
 	      servo1_state = 1;
 	      TIM2->ARR = 240000;
 	    }
@@ -814,12 +864,12 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
 	  }
 	  if(htim == &htim5){
 	    if(servo2_state == 1){
-	      HAL_GPIO_WritePin(GPIOC, GPIO_PIN_2, 0);
+	      HAL_GPIO_WritePin(GPIOC, GPIO_PIN_1, 0);
 	      servo2_state = 0;
 	      TIM5->ARR = servo2_timer;
 	    }
 	    else{
-	      HAL_GPIO_WritePin(GPIOC, GPIO_PIN_2, 1);
+	      HAL_GPIO_WritePin(GPIOC, GPIO_PIN_1, 1);
 	      servo2_state = 1;
 	      TIM5->ARR = 240000;
 	    }
@@ -829,12 +879,14 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
 void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin)
 {
 
-  //MF update and start ADC conversion  pin PE6 i PA1
-  if(GPIO_Pin == GPIO_PIN_6) {
+  //MF update and start ADC conversion  pin PA5 i PA1
+  if(GPIO_Pin == GPIO_PIN_5) {
 	  MF_rdy = 1;
 	  MF_new_val = TIM10->CNT;
   	  TIM10->CNT &= 0x00; //reset timer counter
-  	  ADC1->CR2 |= 1 << 30; //start ADC conversion
+  	  HAL_ADC_Start(&hadc1);
+  	  HAL_ADC_PollForConversion(&hadc1, HAL_MAX_DELAY);
+  	  //ADC1->CR2 |= 1 << 30; //start ADC conversion
   }
   //EF update PIN PB3
   if(GPIO_Pin == GPIO_PIN_3) {
@@ -868,19 +920,21 @@ static void set_local_osc(float freq){
 */
 static void reset_data(){
 	MA_min_val = 4095;
-	MF_max_val = 0;
-	EF_min_val = 65535;
+	MF_max_val = 65535;
+	EF_min_val = 0;
 	MF_rdy = 0;
 	EF_rdy = 0;
 	ADC1->SR &= ~0x10;
 }
+
 static float probability_match(struct coinSave *coin1, struct coinSave *coin2){
-	float da_probability, df_probability, dv_probability;
+	float da_probability, df_probability, dv_probability, result;
 	da_probability = 1 - deviation(coin1->da, coin2->da);
 	df_probability = 1 - deviation(coin1->df, coin2->df);
 	dv_probability = 1 - deviation(coin1->dv, coin2->dv);
 	if(da_probability <= 0 || df_probability <= 0  || dv_probability <= 0) return 0;
-	return da_probability * MAWeight + df_probability * MFWeight + dv_probability * EFWeight;
+	result = da_probability * MAWeight + df_probability * MFWeight + dv_probability * EFWeight;
+	return result;
 }
 
 static float moving_avg(uint8_t *index, uint32_t *array_pointer, uint32_t new_value){
